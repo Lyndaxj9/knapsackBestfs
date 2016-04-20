@@ -185,7 +185,7 @@ void createTree(struct statenode * node, int i, struct node nodeArray[], int n, 
   node->left = yes;
   node->left->profit = node[i-1].profit;
   node->left->weight = node[i-1].weight;
-  node->left->bound = bound(i+1, node->left->weight, node->left->profit, nodeArray, c, n);
+  node->left->bound = bound(i, node->left->weight, node->left->profit, nodeArray, c, n);
   node->right = no;  
 
 }
