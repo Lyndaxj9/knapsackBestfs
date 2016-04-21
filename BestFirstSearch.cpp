@@ -125,7 +125,7 @@ int main(int argc, char **argv){
 
     pq.erase(pq.begin());
     //yes child
-    std::cout<<"v.bound: "<<v.bound<<std::endl;
+    //std::cout<<"v.bound: "<<v.bound<<std::endl;
     if (v.bound > best){
       u.totweight = v.totweight + nodes[v.level].weight;
       u.totprofit = v.totprofit + nodes[v.level].profit;
@@ -184,17 +184,17 @@ int main(int argc, char **argv){
 
   }
   int solsize = 0;
-  std::cout<<"best solution: "<<best<<std::endl;
-  std::cout<<"leaf nodes: "<<k<<std::endl;
-  std::cout<<"node visits: "<<totalvisits+k<<std::endl;
+//  std::cout<<"best solution: "<<best<<std::endl;
+//  std::cout<<"leaf nodes: "<<k<<std::endl;
+//  std::cout<<"node visits: "<<totalvisits+k<<std::endl;
   for(int i = 0; i<numberitems; i++){
     if (b.valid[i] == 1){
       solsize++;
-      std::cout<<"included profit: "<<nodes[i].profit<<std::endl;
-      std::cout<<"included weight: "<<nodes[i].weight<<std::endl;
+    //  std::cout<<"included profit: "<<nodes[i].profit<<std::endl;
+    //  std::cout<<"included weight: "<<nodes[i].weight<<std::endl;
     }
   }
-  std::cout<<"solution size: "<<solsize<<std::endl;
+//  std::cout<<"solution size: "<<solsize<<std::endl;
 
 //-- Write solution to file -----------------------------------------
   std::ofstream outFile(outputFile);
