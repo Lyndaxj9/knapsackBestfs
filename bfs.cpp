@@ -5,18 +5,30 @@
 #include <algorithm>
 #include <stdlib.h>
 
+/*
+ * The purpose of this program is to run best-first-search on some input
+ * to find the best solution to the knapsack problem
+ * ------------------------------------------------------------------
+ *
+ *  FUNCTIONS
+ *  
+ *  bool nodeSorter (struct node const& lhs, struct node const& rhs) - used in std::sort to compare nodes based on ratio
+ *  bool stateSorter(struct statenode const& lhs, struct statenode const& rhs) - used in std::sort to compare structnodes based on bound
+ *  float bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n) - computes the bound for a statenode
+ *  ---------------------------------------------------------------*/
+
 struct node{
   int profit;
   int weight;
   int level;
-  int ratio;
+  float ratio;
   int bound;
 };
 
 struct statenode{
   int totprofit;
   int totweight;
-  int bound;
+  float bound;
   int level;  
   int* valid;
 };
@@ -24,8 +36,9 @@ struct statenode{
 //-- Function Declaractions -----------------------------------------
 bool nodeSorter (struct node const& lhs, struct node const& rhs);
 bool stateSorter(struct statenode const& lhs, struct statenode const& rhs);
-int bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n);
+float bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n);
 
+//-- Main -----------------------------------------------------------
 int main(int argc, char **argv){
   const char* inputFile;
   const char* outputFile;
@@ -64,7 +77,7 @@ int main(int argc, char **argv){
     std::getline(ss, chunk, ',');
 
     nodes[counter].profit = atoi(chunk.c_str());
-    nodes[counter].ratio = nodes[counter].profit/nodes[counter].weight;
+    nodes[counter].ratio = (float)nodes[counter].profit/nodes[counter].weight;
 
     counter++;
   }
@@ -78,6 +91,7 @@ int main(int argc, char **argv){
   std::vector<struct statenode> pq;  
   statenode v;
   statenode u;
+  statenode r;
   statenode b;
 
   int best = 0;
@@ -97,15 +111,21 @@ int main(int argc, char **argv){
     std::sort(pq.begin(), pq.end(), &stateSorter); 
     v = pq.front();
     //totalvisits++;
-    std::cout<<"At level: "<<v.level<<"bound front: "<<v.bound<<std::endl;
+    //std::cout<<"At level: "<<v.level<<" bound front: "<<v.bound<<std::endl;
+    r.level = v.level+1; //u child of v
+    r.valid = new int[numberitems];
+    for(int i=0; i<numberitems; i++){
+      r.valid[i] = v.valid[i];
+    }
     u.level = v.level+1; //u child of v
     u.valid = new int[numberitems];
     for(int i=0; i<numberitems; i++){
       u.valid[i] = v.valid[i];
     }
+
     pq.erase(pq.begin());
     //yes child
-    //std::cout<<"v.bound: "<<v.bound<<std::endl;
+    std::cout<<"v.bound: "<<v.bound<<std::endl;
     if (v.bound > best){
       u.totweight = v.totweight + nodes[v.level].weight;
       u.totprofit = v.totprofit + nodes[v.level].profit;
@@ -115,12 +135,11 @@ int main(int argc, char **argv){
       //std::cout<<"u.totalweight: "<<u.totweight<<" capacity: "<<capacity<<std::endl;
       if ((u.totweight <= capacity) && (u.totprofit > best)){
         best = u.totprofit;
-        b = u;
+        //b = u;
         b.valid = new int[numberitems];
         for(int i=0; i<numberitems; i++){
           b.valid[i] = u.valid[i];
         }
-        std::cout<<"b.valid: "<<b.valid[v.level]<<std::endl;
         //std::cout<<"best now: "<<best<<std::endl;
         
         if(bound(v.level, u.totweight, u.totprofit, nodes, capacity, numberitems) > best){
@@ -136,38 +155,64 @@ int main(int argc, char **argv){
     
     }
     //no child
-    u.totweight = v.totweight;
-    u.totprofit = v.totprofit;
-    u.bound = bound(v.level, u.totweight, u.totprofit, nodes, capacity, numberitems);
-    std::cout<<"bvalidno: "<<b.valid[0]<<std::endl;
-    u.valid[v.level] = 0;
-    if(u.bound > best){
-      pq.push_back(u);
+    r.totweight = v.totweight;
+    r.totprofit = v.totprofit;
+    r.bound = bound(v.level, r.totweight, r.totprofit, nodes, capacity, numberitems);
+    r.valid[v.level] = 0;
+    if(r.bound > best){
+      pq.push_back(r);
       explore = 1;
     } else{
         k++;
     }
+    
+//    u.totweight = v.totweight;
+//    u.totprofit = v.totprofit;
+//    u.bound = bound(v.level, u.totweight, u.totprofit, nodes, capacity, numberitems);
+//    std::cout<<"bvalidno: "<<b.valid[0]<<std::endl;
+//    //u.valid[v.level] = 0;
+//    if(u.bound > best){
+//      pq.push_back(u);
+//      explore = 1;
+//    } else{
+//        k++;
+//    }
 
     if(explore == 1){
       totalvisits++;
     }
 
   }
+  int solsize = 0;
   std::cout<<"best solution: "<<best<<std::endl;
   std::cout<<"leaf nodes: "<<k<<std::endl;
   std::cout<<"node visits: "<<totalvisits+k<<std::endl;
-  std::cout<<"comeon: "<<b.valid[0]<<" "<<b.valid[2]<<std::endl;
   for(int i = 0; i<numberitems; i++){
     if (b.valid[i] == 1){
+      solsize++;
       std::cout<<"included profit: "<<nodes[i].profit<<std::endl;
       std::cout<<"included weight: "<<nodes[i].weight<<std::endl;
     }
   }
+  std::cout<<"solution size: "<<solsize<<std::endl;
+
+//-- Write solution to file -----------------------------------------
+  std::ofstream outFile(outputFile);
+  outFile<<numberitems<<","<<best<<","<<solsize<<std::endl;
+  outFile<<totalvisits+k<<","<<k<<std::endl;
+  for(int i = 0; i<numberitems; i++){
+    if(b.valid[i] == 1){
+      outFile<<nodes[i].weight<<","<<nodes[i].profit<<std::endl;
+    }
+  }
+
+  outFile.close();
 }
+
 //-- Function Initializations ---------------------------------------
 
-int bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n){
-  int bound = totprofit;
+float bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n){
+  float bound = totprofit;
   //std::cout<<"enter profit: "<<totprofit<<std::endl;
   float fraction = 0;
   i++; 
