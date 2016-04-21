@@ -1,5 +1,3 @@
-# knapsackBestfs
-
 ABOUT
 -----
 
