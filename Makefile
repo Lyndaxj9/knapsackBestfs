@@ -1,10 +1,10 @@
 #Makefile
 
-bfs: bfs.o
-	g++ bfs.o -g -o bfs
+BestFirstSearch: BestFirstSearch.o
+	g++ BestFirstSearch.o -g -o BestFirstSearch
 
-bfs.o: bfs.cpp
-	g++ -g -c bfs.cpp
+BestFirstSearch.o: BestFirstSearch.cpp
+	g++ -g -c BestFirstSearch.cpp
 
 clean:
-	-rm -f *.o bfs
+	-rm -f *.o BestFirstSearch
