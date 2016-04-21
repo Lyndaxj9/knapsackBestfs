@@ -1,58 +1,49 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <cstdlib>
-#include <cstring>
-#include <string>
-#include <algorithm>
-#include <queue>
 #include <vector>
+#include <algorithm>
+#include <stdlib.h>
 
-//will probably use a struct for state space tree
 struct node{
   int profit;
   int weight;
-  float ratio;
-  int totalprofit;
-  int totalweight;
-  int upperBound;
   int level;
-  struct node * leftnode;
-  struct node * rightnode;
+  int ratio;
+  int bound;
 };
 
 struct statenode{
-  int profit;
-  int weight;
+  int totprofit;
+  int totweight;
   int bound;
-  struct statenode * left;
-  struct statenode * right;
+  int level;  
+  int* valid;
 };
 
-bool nodeSorter(struct node const& lhs, struct node const& rhs);
-bool operator<(struct node const& lhs, struct node const& rhs);
-float bound(int level, int totalweight, int totalprofit, struct node nodeArray[], int c, int n);
-void initTree(struct statenode * head, struct node nodeArray[], int c, int n);
-void createTree(struct statenode * node, int i, struct node nodeArray[], int n, int c);
+//-- Function Declaractions -----------------------------------------
+bool nodeSorter (struct node const& lhs, struct node const& rhs);
+bool stateSorter(struct statenode const& lhs, struct statenode const& rhs);
+int bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n);
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv){
   const char* inputFile;
-  const char* outputFile;  
-  
-  if (argc < 3){
+  const char* outputFile;
+
+  if(argc < 3){
     std::cout<<"Usage: ./BestFirstSearch <input.txt> <output.txt>"<<std::endl;
     return 1;
   } else {
-    inputFile = argv[1];
-    outputFile = argv[2];
+      inputFile = argv[1];
+      outputFile = argv[2];
   }
-  
+
   int numberitems;
   int capacity;
   std::string line, chunk;
 
-  //-- Open input file ----------------------------------------------
-  std::ifstream knapFile(argv[1]);
+//-- Open input file ------------------------------------------------
+  std::ifstream knapFile(inputFile);
   //if(knapFile)
   std::getline(knapFile, line);
   std::stringstream ss(line);
@@ -61,175 +52,149 @@ int main(int argc, char **argv) {
   std::getline(ss, chunk, ',');
   capacity = atoi(chunk.c_str());
 
-  std::cout<<"num of items "<<numberitems<<std::endl;
-  std::cout<<"c: "<<capacity<<std::endl;
-  struct node nodes[numberitems]; 
+  struct node nodes[numberitems];
   int counter = 0;
-  
+
 //-- Parse file reading in all item values --------------------------
   while (std::getline(knapFile, line)){
     ss.clear();
     ss.str(line);
-    std::getline(ss,chunk, ',');
+    std::getline(ss, chunk, ',');
     nodes[counter].weight = atoi(chunk.c_str());
     std::getline(ss, chunk, ',');
 
     nodes[counter].profit = atoi(chunk.c_str());
     nodes[counter].ratio = nodes[counter].profit/nodes[counter].weight;
-    nodes[counter].totalweight = nodes[counter].totalprofit = 0;
-    std::cout<<"Weight: "<<nodes[counter].weight<<" Profit: "<<nodes[counter].profit<<" Ratio: "<<nodes[counter].ratio<<std::endl;
+
     counter++;
   }
+  ss.clear();
+  knapFile.close();
 
 //-- Sort array based on ratio --------------------------------------
   std::sort(nodes, nodes+numberitems, &nodeSorter);
-  /* print sorted array ---------------------------------------------
-  for(int i = 0; i < numberitems; i++){
-    std::cout<<"ratio: "<<nodes[i].ratio<<std::endl;
-  }*/
 
-//-- tree?
-  struct statenode * roothead;
-  initTree(roothead, nodes, capacity, numberitems);
-//  struct node head = nodes[0];
-//  for(int i = 0; i<numberitems; i++){
-//    
-//  }
+//-- Best/Bound Knapsack --------------------------------------------
+  std::vector<struct statenode> pq;  
+  statenode v;
+  statenode u;
+  statenode b;
 
-//-- bfs -
-//  std::priority_queue<struct node, std::vector<struct node>, std::greater<struct node> > pq;
-//  struct node head = nodes[0];
-//  int best = head.profit;
-//  pq.push(head);
-// 
-//  while(!pq.empty()){
-//    pq.pop();
-//     
-//  }
+  int best = 0;
+  v.level = 0;
+  v.totprofit = 0;
+  v.totweight = 0;
+  v.bound = bound(-1, v.totweight, v.totprofit, nodes, capacity, numberitems);
+//  int* array = new int[numberitems];
+//  v.valid = array;
+  v.valid = new int[numberitems];
+  pq.push_back(v);
 
-
-
-//-- Procedure Knapsack ---------------------------------------------
-//  std::priority_queue<struct node, std::vector<struct node>, std::greater<struct node> > pq;
-//  struct node root = nodes[0];
-//  int best = 0;
-//  root.level = root.totalprofit = root.totalweight = 0;
-//  //calculate bound 
-//  std::cout<<"root totweight: "<<root.totalweight<<std::endl;
-//  root.upperBound = bound(root.level, root.totalweight, root.totalprofit,  nodes, capacity, numberitems);
-//  std::cout<<"Root bound: "<<root.upperBound<<std::endl;
-//  pq.push(root);
-//  
-//  while (!pq.empty() && root.level+1<numberitems){
-//    struct node v = pq.top();
-//    std::cout<<"pq bound: "<<v.upperBound<<std::endl;
-////    if(v.level+1 < numberitems){
-////      struct node left = nodes[v.level+1];
-////      left.level = v.level+1;
-////      struct node right = nodes[v.level+1];
-////      right.level = v.level+1;
-////      break;
-////    }
-//    struct node left = nodes[v.level+1];
-//    left.level = v.level+1;
-//    struct node right = nodes[v.level+1];
-//    right.level = v.level+1;
-//
-//    pq.pop();
-//    if (v.upperBound > best){
-////        struct node left = nodes[v.level+1];
-//        left.totalweight = v.totalweight + nodes[v.level].weight;
-//        left.totalprofit = v.totalprofit + nodes[v.level].profit;
-////        *v.leftnode = nodes[v.level+1];
-////      v.leftnode->level = v.level+1;
-////      v.leftnode->totalweight = v.totalweight + nodes[v.level].weight;
-////      v.leftnode->totalprofit = v.totalprofit + nodes[v.level].profit; 
-//    }
-//    if (left.totalweight <= capacity && left.totalprofit > best){
-////      best = v.leftnode->totalprofit;    
-//        best = left.totalprofit;
-//    }
-//    if (bound(left.level, left.totalweight, left.totalprofit, nodes, capacity, numberitems) > best){
-////      pq.push(*(v.leftnode));
-//        pq.push(left);
-//    }
-//    right.totalweight = v.totalweight;
-//    right.totalprofit = v.totalprofit;
-//    right.upperBound = bound(right.level, right.totalweight, right.totalprofit, nodes, capacity, numberitems);
-//    std::cout<<"rightbound: "<<right.upperBound<<std::endl;
-//    if(right.upperBound > best){
-//      pq.push(right);
-//    }
-////    v.rightnode->level = v.level+1;
-////    v.rightnode->totalweight = v.totalweight;
-////    v.rightnode->totalprofit = v.totalprofit;
-////    v.rightnode->upperBound = bound(v.rightnode->level, nodes, capacity, numberitems);
-////    if(v.rightnode->upperBound > best){
-////      pq.push(*(v.rightnode));
-////    }
-//  }
-
-//-- Creating Priority Queue ----------------------------------------
-//  std::priority_queue<struct node, std::vector<struct node>, std::less<struct node> > pq;
-//  for(int i = 0; i<numberitems; i++){
-//    pq.push(nodes[i]);
-//    std::cout<<nodes[i].ratio<<std::endl;
-//  }
-  //std::cout<<"Top: "<<pq.top().ratio<<std::endl;
-  return 0;
-}
-
-void createTree(struct statenode * node, int i, struct node nodeArray[], int n, int c){
-  struct statenode * yes = new struct statenode;
-  struct statenode * no = new struct statenode;
-  node->left = yes;
-  node->left->profit = node[i-1].profit;
-  node->left->weight = node[i-1].weight;
-  node->left->bound = bound(i, node->left->weight, node->left->profit, nodeArray, c, n);
-  node->right = no;  
-
-}
-
-void initTree(struct statenode * head, struct node nodeArray[], int c, int n){
-  head->profit = 0;
-  head->weight = 0;
-  head->bound = bound(0, 0, 0, nodeArray, c, n);
-  createTree(head, 1, nodeArray, n, c);
-}
-
-//-- Compute UpperBound Using KWF
-float bound(int level, int totalweight, int totalprofit, struct node nodeArray[], int c, int n){
-  float bound = totalprofit;
-
-  int weight = totalweight;
-  float fraction = 0;
-  std::cout<<"weight: "<<weight<<" lvl: "<<level<<std::endl;
-  while (weight < c && level < n){
-    if (weight + nodeArray[level].weight <= c){
-      weight += nodeArray[level].weight;
-      bound += nodeArray[level].profit;
-      std::cout<<"ratio: "<<nodeArray[level].ratio<<std::endl;
-    } else {
-        fraction = (float)(c - weight)/nodeArray[level].weight;
-        weight = c;
-        bound += nodeArray[level].profit * fraction;
+  int k = 0;
+  int totalvisits = 0;
+  while (!pq.empty()){
+    int explore = 0;
+    std::sort(pq.begin(), pq.end(), &stateSorter); 
+    v = pq.front();
+    //totalvisits++;
+    std::cout<<"At level: "<<v.level<<"bound front: "<<v.bound<<std::endl;
+    u.level = v.level+1; //u child of v
+    u.valid = new int[numberitems];
+    for(int i=0; i<numberitems; i++){
+      u.valid[i] = v.valid[i];
     }
-    level++;
+    pq.erase(pq.begin());
+    //yes child
+    //std::cout<<"v.bound: "<<v.bound<<std::endl;
+    if (v.bound > best){
+      u.totweight = v.totweight + nodes[v.level].weight;
+      u.totprofit = v.totprofit + nodes[v.level].profit;
+      u.valid[v.level] = 1;
+      //update best
+      //std::cout<<"u.totalprofit: "<<u.totprofit<<std::endl;
+      //std::cout<<"u.totalweight: "<<u.totweight<<" capacity: "<<capacity<<std::endl;
+      if ((u.totweight <= capacity) && (u.totprofit > best)){
+        best = u.totprofit;
+        b = u;
+        b.valid = new int[numberitems];
+        for(int i=0; i<numberitems; i++){
+          b.valid[i] = u.valid[i];
+        }
+        std::cout<<"b.valid: "<<b.valid[v.level]<<std::endl;
+        //std::cout<<"best now: "<<best<<std::endl;
+        
+        if(bound(v.level, u.totweight, u.totprofit, nodes, capacity, numberitems) > best){
+          u.bound = bound(v.level, u.totweight, u.totprofit, nodes, capacity, numberitems);
+          //std::cout<<"At level: "<<u.level<<" Bound pushed: "<<u.bound<<std::endl;
+          pq.push_back(u);
+          explore = 1;
+        }
+      } else {
+          k++;
+          explore = 1;
+      }
+    
+    }
+    //no child
+    u.totweight = v.totweight;
+    u.totprofit = v.totprofit;
+    u.bound = bound(v.level, u.totweight, u.totprofit, nodes, capacity, numberitems);
+    std::cout<<"bvalidno: "<<b.valid[0]<<std::endl;
+    u.valid[v.level] = 0;
+    if(u.bound > best){
+      pq.push_back(u);
+      explore = 1;
+    } else{
+        k++;
+    }
+
+    if(explore == 1){
+      totalvisits++;
+    }
+
   }
-  std::cout<<"bound: "<<bound<<std::endl;
+  std::cout<<"best solution: "<<best<<std::endl;
+  std::cout<<"leaf nodes: "<<k<<std::endl;
+  std::cout<<"node visits: "<<totalvisits+k<<std::endl;
+  std::cout<<"comeon: "<<b.valid[0]<<" "<<b.valid[2]<<std::endl;
+  for(int i = 0; i<numberitems; i++){
+    if (b.valid[i] == 1){
+      std::cout<<"included profit: "<<nodes[i].profit<<std::endl;
+      std::cout<<"included weight: "<<nodes[i].weight<<std::endl;
+    }
+  }
+}
+//-- Function Initializations ---------------------------------------
+
+int bound(int i, int totweight, int totprofit, struct node * nodeArray, int c, int n){
+  int bound = totprofit;
+  //std::cout<<"enter profit: "<<totprofit<<std::endl;
+  float fraction = 0;
+  i++; 
+  //std::cout<<"enter i: "<<i<<std::endl;
+  while (totweight < c && i < n){
+    //std::cout<<"enter while: "<<i<<std::endl;
+    if (totweight + nodeArray[i].weight <= c){
+      totweight += nodeArray[i].weight;
+      bound += nodeArray[i].profit;
+    } else {
+        fraction = (float)(c - totweight)/nodeArray[i].weight;
+        totweight = c;
+        bound += nodeArray[i].profit * fraction;
+    }
+    i++;
+  }
   return bound;
 }
 
-//-- Predicate function used to compare nodes based on ratio and profit
 bool nodeSorter(struct node const& lhs, struct node const& rhs){
-  if(lhs.ratio == rhs.ratio){
+  if (lhs.ratio == rhs.ratio){
     return lhs.profit > rhs.profit;
   } else {
       return lhs.ratio > rhs.ratio;
   }
 }
 
-//-- change to be able to edit with upperbound
-bool operator>(struct node const& lhs, struct node const& rhs){
-  return lhs.upperBound > rhs.upperBound;
+bool stateSorter(struct statenode const& lhs, struct statenode const& rhs){
+  return lhs.bound > rhs.bound;
 }
